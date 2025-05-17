@@ -1,5 +1,8 @@
 import os
+import sys
 from clang import cindex
+import tempfile
+import subprocess
 
 # Replace with actual path to your LLVM installation
 llvm_path = r"C:\Program Files\LLVM\bin"
