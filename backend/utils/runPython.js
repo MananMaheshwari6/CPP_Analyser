@@ -1,22 +1,26 @@
-const { spawn } = require('child_process');
-const path = require('path');
-
 module.exports = function runPython(code) {
     return new Promise((resolve, reject) => {
-        const pythonProcess = spawn('python3', [path.join(__dirname, '../services/analyzeComplexity.py')]);
+        // Mock implementation for testing without Python
+        console.log("MOCK: Analyzing code:", code.slice(0, 50) + "...");
 
-        let result = '';
-        let error = '';
+        // Simple mock analysis logic
+        let timeComplexity = "O(1)";
+        let spaceComplexity = "O(1)";
 
-        pythonProcess.stdout.on('data', data => result += data.toString());
-        pythonProcess.stderr.on('data', data => error += data.toString());
+        if (code.includes("for") && code.includes("for", code.indexOf("for") + 3)) {
+            timeComplexity = "O(n^2)";
+        } else if (code.includes("for") || code.includes("while")) {
+            timeComplexity = "O(n)";
+        }
 
-        pythonProcess.on('close', codeExit => {
-            if (codeExit !== 0 || error) reject(new Error(error));
-            else resolve(result);
-        });
+        if (code.includes("vector") || code.includes("array") || code.includes("malloc") ||
+            code.includes("new") || code.includes("alloc")) {
+            spaceComplexity = "O(n)";
+        }
 
-        pythonProcess.stdin.write(code);
-        pythonProcess.stdin.end();
+        // Add delay to simulate processing
+        setTimeout(() => {
+            resolve(`${timeComplexity},${spaceComplexity}`);
+        }, 500);
     });
 };

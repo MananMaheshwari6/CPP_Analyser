@@ -13,10 +13,6 @@ npm install bun -g
 bun install
 cd ..
 
-# Install Python dependencies
-echo "Installing Python dependencies..."
-pip install pycparser || pip3 install pycparser
-
 # Create a .env file if it doesn't exist
 if [ ! -f .env ]; then
   echo "Creating .env file..."
