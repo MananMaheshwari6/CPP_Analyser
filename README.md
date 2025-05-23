@@ -1,127 +1,95 @@
-# CPP_Analyser
+# CPP Code Analyzer
 
-A web application for analyzing C++ code to determine its time and space complexity.
+A web application for analyzing the time and space complexity of C++ code using AST (Abstract Syntax Tree) analysis.
 
 ## Features
 
-- Analyzes C++ code to determine time and space complexity
-- Provides visual representation of complexity with charts
-- Stores analysis history
-- User-friendly interface with code editor
-- Supports file upload for C++ code files
+- Analyze C++ code for time and space complexity
+- Code editor with syntax highlighting
+- File upload functionality
+- Responsive UI with dark mode
+- Visual representation of analysis results
+- API for code analysis
+
+## Prerequisites
+
+- Node.js (12.x or later)
+- Python 3.6+ (with LLVM/Clang for production)
+
+## Installation
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/CPP_analyser_2.git
+   cd CPP_analyser_2
+   ```
+
+2. Install backend dependencies:
+   ```
+   cd backend
+   npm install
+   ```
+
+3. Install Python dependencies (for production):
+   ```
+   pip install clang
+   ```
+
+## Running the Application
+
+1. Start the server:
+   ```
+   cd backend
+   npm start
+   ```
+
+2. Open your browser and navigate to:
+   ```
+   http://localhost:3000
+   ```
+
+## Development Notes
+
+- The backend uses a mock analyzer in development mode. For production, you need to configure the Python environment with LLVM/Clang.
+- To use the actual Python analyzer:
+  1. Install LLVM/Clang (version 12 or later)
+  2. Update the `llvm_path` in `backend/services/analyzeComplexity.py` to point to your LLVM installation
+  3. Modify `backend/utils/runPython.js` to use the actual Python script instead of the mock
+
+## API Endpoints
+
+- `POST /api/analyze`: Analyze C++ code
+  - Request body: `{ "code": "your cpp code here" }`
+  - Response: `{ "timeComplexity": "O(n)", "spaceComplexity": "O(1)" }`
+
+- `GET /api/history`: Get analysis history
+  - Response: Array of analysis records
 
 ## Project Structure
 
-- **Backend**: Node.js with Express
-  - API endpoints for code analysis and history retrieval
-  - MongoDB for data storage (with in-memory fallback)
-
-- **Frontend**: React with TypeScript
-  - Modern UI with responsive design
-  - Code editor for C++ input
-  - Visualization of analysis results
-  - History view of past analyses
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or higher)
-- MongoDB (optional)
-- Bun package manager
-
-### Installation
-
-1. Clone the repository
 ```
-git clone https://github.com/MananMaheshwari6/CPP_Analyser.git
-cd CPP_Analyser
+CPP_analyser_2/
+├── backend/
+│   ├── controllers/
+│   │   └── complexityController.js
+│   ├── models/
+│   │   └── CodeHistory.js
+│   ├── routes/
+│   │   └── complexityRoutes.js
+│   ├── services/
+│   │   └── analyzeComplexity.py
+│   ├── utils/
+│   │   └── runPython.js
+│   └── server.js
+├── frontend/
+│   ├── css/
+│   │   └── styles.css
+│   ├── js/
+│   │   └── app.js
+│   └── index.html
+└── README.md
 ```
 
-2. Install dependencies
-```
-npm run install-all
-```
+## License
 
-3. Set up environment variables
-```
-MONGO_URI=your_mongodb_connection_string
-```
-
-4. Start the application
-```
-npm run dev
-```
-
-## Usage Guide
-
-1. **Login**: Use any username/password (authentication is mocked for demo)
-
-2. **Dashboard**: View your analysis statistics
-
-3. **Analyzer**: Input or upload C++ code for analysis
-   - Type directly in the editor
-   - Upload a .cpp file
-   - Click "Analyze Complexity"
-
-4. **Results**: View the analysis results
-   - Time complexity (O(1), O(n), O(n²), etc.)
-   - Space complexity
-   - Visual representations
-   - Execution time estimates
-
-## Code Analysis Examples
-
-### Constant Time: O(1)
-```cpp
-#include <iostream>
-
-int main() {
-    int a = 5;
-    int b = 10;
-    int sum = a + b;
-    std::cout << "Sum: " << sum << std::endl;
-    return 0;
-}
-```
-
-### Linear Time: O(n)
-```cpp
-#include <iostream>
-
-int main() {
-    int n = 10;
-    int sum = 0;
-
-    for (int i = 0; i < n; i++) {
-        sum += i;
-    }
-
-    std::cout << "Sum: " << sum << std::endl;
-    return 0;
-}
-```
-
-### Quadratic Time: O(n²)
-```cpp
-#include <iostream>
-
-int main() {
-    int n = 10;
-
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            std::cout << i * j << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    return 0;
-}
-```
-
-## Contributors
-
-- [MananMaheshwari6](https://github.com/MananMaheshwari6)
-- [KaranSinghDhanik](https://github.com/KaranSinghDhanik)
-- [manjul05](https://github.com/manjul05)
+This project is licensed under the MIT License.
