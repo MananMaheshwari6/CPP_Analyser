@@ -1,121 +1,113 @@
-import os
 import sys
-from clang import cindex
+import subprocess
 import tempfile
-
-# Try to find LLVM installation based on OS
-try:
-    import platform
-    system = platform.system()
-
-    if system == 'Windows':
-        llvm_path = r"C:\Program Files\LLVM\bin"
-        lib_name = "libclang.dll"
-    elif system == 'Linux':
-        llvm_path = "/usr/lib/llvm-12/lib"
-        lib_name = "libclang.so.1"
-    elif system == 'Darwin':  # macOS
-        llvm_path = "/usr/local/opt/llvm/lib"
-        lib_name = "libclang.dylib"
-    else:
-        llvm_path = ""
-        lib_name = ""
-
-    if llvm_path and os.path.exists(llvm_path):
-        cindex.Config.set_library_file(os.path.join(llvm_path, lib_name))
-except Exception as e:
-    print(f"Failed to configure LLVM: {e}", file=sys.stderr)
-    # Continue with default paths as fallback
-
-
-def count_loops_and_allocations(node, loop_count=0, alloc_count=0, recursion=False, func_name=None):
-    if node.kind in [cindex.CursorKind.FOR_STMT, cindex.CursorKind.WHILE_STMT]:
-        loop_count += 1
-
-    elif node.kind == cindex.CursorKind.CALL_EXPR:
-        # Try to get callee name robustly
-        callee = node.get_definition()
-        callee_name = callee.spelling.lower() if callee and callee.spelling else node.spelling.lower()
-
-        if callee_name == func_name:
-            recursion = True
-
-        if "alloc" in callee_name or callee_name in ['malloc', 'calloc']:
-            alloc_count += 1
-
-    elif node.kind == cindex.CursorKind.CXX_NEW_EXPR:
-        alloc_count += 1
-
-    for child in node.get_children():
-        loop_count, alloc_count, recursion = count_loops_and_allocations(
-            child, loop_count, alloc_count, recursion, func_name)
-
-    return loop_count, alloc_count, recursion
-
-
-def analyze_function(function_node):
-    func_name = function_node.spelling
-    return count_loops_and_allocations(function_node, func_name=func_name)
-
+import os
+import traceback
 
 def analyze_cpp_code(code):
-    with tempfile.NamedTemporaryFile(mode='w+', suffix='.cpp', delete=False) as temp:
-        temp.write(code)
-        temp.flush()
-        temp_path = temp.name
+    """
+    Analyze C++ code by creating a temp file and using Clang to dump the AST.
+    Returns a placeholder time complexity string or error message.
+    """
+    temp_path = None
 
     try:
-        index = cindex.Index.create()
-        tu = index.parse(temp_path)
+        print(f"\n=== Starting analysis ===")
+        print(f"Code length: {len(code)} characters")
+        print(f"First 100 chars: {code[:100]}")
+        
+        # Create a temporary file with the code
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.cpp', delete=False) as temp:
+            temp.write(code)
+            temp.flush()
+            temp_path = temp.name
+            print(f"\n=== Created temp file ===")
+            print(f"Temp file path: {temp_path}")
+            print(f"File content preview:\n{code[:100]}...")
 
-        if not tu:
-            return "O(1),O(1)"
+        # Verify file exists and has content
+        if not os.path.exists(temp_path):
+            print(f"=== ERROR ===")
+            print(f"Temp file {temp_path} does not exist!")
+            return "ERROR: Failed to create temp file"
 
-        if len(tu.diagnostics) > 0:
-            for diag in tu.diagnostics:
-                print(f"Diagnostic: {diag}", file=sys.stderr)
+        with open(temp_path, 'r') as f:
+            content = f.read()
+            if not content:
+                print("=== ERROR ===")
+                print("Temp file is empty!")
+                return "ERROR: Empty temp file"
 
-        total_loops = 0
-        total_allocs = 0
-        has_recursion = False
+        # Run Clang AST dump
+        try:
+            print("\n=== Starting Clang analysis ===")
+            print(f"Running: clang -Xclang -ast-dump {temp_path}")
+            result = subprocess.run(
+                ['clang', '-Xclang', '-ast-dump', temp_path],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            print("\n=== Clang output ===")
+            print(f"Return code: {result.returncode}")
+            print("\n=== Clang stdout ===")
+            print(result.stdout[:500])  # Print only first 500 chars to avoid flooding
+            if result.stderr:
+                print("\n=== Clang stderr ===")
+                print(result.stderr)
 
-        for node in tu.cursor.get_children():
-            if node.kind == cindex.CursorKind.FUNCTION_DECL and node.is_definition():
-                loops, allocs, recursion = analyze_function(node)
-                total_loops += loops
-                total_allocs += allocs
-                has_recursion = has_recursion or recursion
-
-        # Heuristic rules
-        # Smart heuristic detection
-        if has_recursion and total_loops >= 1:
-            time_complexity = "O(n log n)"  # e.g., Merge Sort
-        elif has_recursion:
-            time_complexity = "O(2^n)"  # e.g., Fibonacci
-        elif total_loops >= 2:
-            time_complexity = "O(n^2)"
-        elif total_loops == 1:
-            # Try to find log(n) loop pattern
-            log_loop_found = False
-            with open(temp_path, 'r') as f:
-                code_lines = f.read()
-                if 'mid' in code_lines and ('high' in code_lines or 'low' in code_lines):
-                    log_loop_found = True
-                elif any(op in code_lines for op in ['i = i/2', 'i /= 2', 'i >>= 1']):
-                    log_loop_found = True
-            time_complexity = "O(log n)" if log_loop_found else "O(n)"
-        else:
-            time_complexity = "O(1)"
-
-        space_complexity = "O(n)" if total_allocs > 0 else "O(1)"
-
-        return f"{time_complexity},{space_complexity}"
+            # Placeholder for actual complexity analysis logic
+            print("\n=== Analysis complete ===")
+            print("Returning placeholder complexity")
+            return "O(n),O(1)"
+            
+        except subprocess.TimeoutExpired:
+            print("=== ERROR ===")
+            print("Clang command timed out")
+            return "ERROR: Analysis timed out"
+        except subprocess.CalledProcessError as e:
+            print("=== ERROR ===")
+            print(f"Clang returned error code {e.returncode}")
+            print(f"Output: {e.output}")
+            return f"ERROR: Clang error: {str(e)}"
+        except Exception as e:
+            print("=== ERROR ===")
+            print("Error running Clang:")
+            print(traceback.format_exc())
+            return f"ERROR: Failed to analyze code: {str(e)}"
+            
+    except Exception as e:
+        print("=== ERROR ===")
+        print("Unhandled error in analyze_cpp_code:")
+        print(traceback.format_exc())
+        return f"ERROR: Internal error: {str(e)}"
 
     finally:
-        os.unlink(temp_path)
-
+        # Always clean up temp file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.unlink(temp_path)
+                print(f"\n=== Cleanup ===")
+                print(f"Deleted temp file: {temp_path}")
+            except Exception as e:
+                print("=== ERROR ===")
+                print(f"Error deleting temp file: {str(e)}")
 
 if __name__ == "__main__":
-    code = sys.stdin.read()
+    if len(sys.argv) != 2:
+        print("=== ERROR ===")
+        print("Usage: python analyzeComplexity.py <cpp_file>")
+        sys.exit(1)
+    
+    cpp_file = sys.argv[1]
+    if not os.path.exists(cpp_file):
+        print("=== ERROR ===")
+        print(f"File not found: {cpp_file}")
+        sys.exit(1)
+    
+    with open(cpp_file, 'r') as f:
+        code = f.read()
+    
     result = analyze_cpp_code(code)
     print(result)

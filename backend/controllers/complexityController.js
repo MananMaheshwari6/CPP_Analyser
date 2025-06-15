@@ -7,12 +7,30 @@ const inMemoryDb = {
 };
 
 exports.analyzeCode = async (req, res) => {
+    console.log("Received code analysis request");
+    console.log("Request body:", req.body);
+    
     const { code } = req.body;
-    if (!code) return res.status(400).json({ error: "Code is required" });
+    if (!code) {
+        console.error("No code provided in request");
+        return res.status(400).json({ error: "Code is required" });
+    }
 
     try {
+        console.log("Starting Python analysis...");
         const output = await runPython(code);
+        console.log("Python analysis output:", output);
+        
+        if (!output || output.includes('ERROR:')) {
+            console.error("Python script returned error:", output);
+            return res.status(500).json({ 
+                error: "Failed to analyze code", 
+                details: output 
+            });
+        }
+
         const [time, space] = output.trim().split(',');
+        console.log("Analysis results:", { timeComplexity: time, spaceComplexity: space });
 
         try {
             // Save with user ID if authenticated
