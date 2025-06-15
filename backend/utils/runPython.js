@@ -1,26 +1,34 @@
+const { spawn } = require("child_process");
+const path = require("path");
+
 module.exports = function runPython(code) {
     return new Promise((resolve, reject) => {
-        // Mock implementation for testing without Python
-        console.log("MOCK: Analyzing code:", code.slice(0, 50) + "...");
+        const scriptPath = path.join(__dirname, "analyzeComplexity.py");
 
-        // Simple mock analysis logic
-        let timeComplexity = "O(1)";
-        let spaceComplexity = "O(1)";
+        const python = spawn("python", [scriptPath]);
 
-        if (code.includes("for") && code.includes("for", code.indexOf("for") + 3)) {
-            timeComplexity = "O(n^2)";
-        } else if (code.includes("for") || code.includes("while")) {
-            timeComplexity = "O(n)";
-        }
+        let result = "";
+        let errorOutput = "";
 
-        if (code.includes("vector") || code.includes("array") || code.includes("malloc") ||
-            code.includes("new") || code.includes("alloc")) {
-            spaceComplexity = "O(n)";
-        }
+        python.stdout.on("data", (data) => {
+            result += data.toString();
+        });
 
-        // Add delay to simulate processing
-        setTimeout(() => {
-            resolve(`${timeComplexity},${spaceComplexity}`);
-        }, 500);
+        python.stderr.on("data", (data) => {
+            errorOutput += data.toString();
+        });
+
+        python.on("close", (code) => {
+            if (code !== 0 || errorOutput) {
+                console.error("Python error:", errorOutput);
+                reject(`Python script failed with code ${code}\n${errorOutput}`);
+            } else {
+                resolve(result.trim()); // e.g., "O(n log n),O(n)"
+            }
+        });
+
+        // Send the C++ code to the Python script
+        python.stdin.write(code);
+        python.stdin.end();
     });
 };

@@ -87,12 +87,23 @@ def analyze_cpp_code(code):
                 has_recursion = has_recursion or recursion
 
         # Heuristic rules
-        if has_recursion:
-            time_complexity = "O(2^n)"
+        # Smart heuristic detection
+        if has_recursion and total_loops >= 1:
+            time_complexity = "O(n log n)"  # e.g., Merge Sort
+        elif has_recursion:
+            time_complexity = "O(2^n)"  # e.g., Fibonacci
         elif total_loops >= 2:
             time_complexity = "O(n^2)"
         elif total_loops == 1:
-            time_complexity = "O(n)"
+            # Try to find log(n) loop pattern
+            log_loop_found = False
+            with open(temp_path, 'r') as f:
+                code_lines = f.read()
+                if 'mid' in code_lines and ('high' in code_lines or 'low' in code_lines):
+                    log_loop_found = True
+                elif any(op in code_lines for op in ['i = i/2', 'i /= 2', 'i >>= 1']):
+                    log_loop_found = True
+            time_complexity = "O(log n)" if log_loop_found else "O(n)"
         else:
             time_complexity = "O(1)"
 
