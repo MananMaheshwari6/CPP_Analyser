@@ -1,9 +1,15 @@
 const axios = require("axios");
 require('dotenv').config();
 module.exports = async function aiAnalyzeCode(code) {
-  const prompt = `You are an expert C++ code analyzer. Analyze the following code and respond strictly in this format: O(time complexity),O(space complexity). Do not include explanations.
+  const prompt = `You are an expert C++ code analyzer. Analyze the following C++ code and respond strictly in this format:
 
+    O(time complexity),O(space complexity)
+
+    If the code is invalid or contains syntax errors, respond with exactly: Invalid code
+
+  Code:
   ${code}`;
+
 
   try {
     const response = await axios.post(
