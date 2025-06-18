@@ -89,9 +89,30 @@
             const authMessage = document.getElementById('auth-message');
             const historySubtitle = document.getElementById('history-subtitle');
 
-            // Theme toggle
-            themeToggle.addEventListener('change', function() {
-                document.body.classList.toggle('light-mode');
+            // Theme persistence and toggle sync
+            document.addEventListener('DOMContentLoaded', function() {
+                const themeToggle = document.getElementById('theme-toggle-input');
+                // Apply saved theme
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'light') {
+                    document.body.classList.add('light-mode');
+                    if (themeToggle) themeToggle.checked = true;
+                } else {
+                    document.body.classList.remove('light-mode');
+                    if (themeToggle) themeToggle.checked = false;
+                }
+                // Listen for toggle changes
+                if (themeToggle) {
+                    themeToggle.addEventListener('change', function() {
+                        if (themeToggle.checked) {
+                            document.body.classList.add('light-mode');
+                            localStorage.setItem('theme', 'light');
+                        } else {
+                            document.body.classList.remove('light-mode');
+                            localStorage.setItem('theme', 'dark');
+                        }
+                    });
+                }
             });
 
             // Listen for auth state changes
@@ -114,7 +135,7 @@
             function loadHistoryData() {
                 fetch('/api/history', {
                     method: 'GET',
-                    credentials: 'include' // Important for sending auth cookies
+                    credentials: 'include'
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -123,7 +144,6 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log('History data:', data);
                     historyTableBody.innerHTML = '';
 
                     if (data.length === 0) {
@@ -137,7 +157,6 @@
                         return;
                     }
 
-                    // Create table rows for each history item
                     data.forEach(item => {
                         const date = new Date(item.createdAt).toLocaleString();
                         const codeSnippet = truncateCode(item.code, 50);
@@ -153,7 +172,6 @@
                         historyTableBody.appendChild(row);
                     });
 
-                    // Set colors for complexity values
                     document.querySelectorAll('.complexity').forEach(el => {
                         const complexity = el.textContent;
                         if (complexity === 'O(1)' || complexity === 'O(log n)') {
@@ -166,7 +184,6 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Error loading history:', error);
                     historyTableBody.innerHTML = `
                         <tr>
                             <td colspan="4" class="empty-history">

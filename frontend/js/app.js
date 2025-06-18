@@ -75,7 +75,6 @@ int main() {
         setComplexityColor(spaceOutEl, spaceComplexity);
       })
       .catch(err => {
-        console.error(err);
         alert("Failed to analyze code. Please try again.");
       })
       .finally(() => {

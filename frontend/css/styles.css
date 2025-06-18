@@ -1,6 +1,7 @@
 /* Main CSS styles for CodeAnalyzer */
 :root {
   --primary-color: #1fe6d3;
+  --primary-hover: #1ed9c5;
   --background-dark: #141d2e;
   --background-darker: #0f172a;
   --card-bg: #1a2234;
@@ -10,6 +11,11 @@
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --danger-color: #ef4444;
+  --transition: all 0.3s ease;
+  --radius: 12px;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
 }
 
 * {
@@ -353,4 +359,109 @@ main {
   .history-table pre {
     max-width: 150px;
   }
+}
+
+/* Light mode overrides */
+body.light-mode {
+  --background-darker: #e9edf3;
+  --background-dark: #dbe4ee;
+  --card-bg: #f4f6fa;
+  --text-color: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #cbd5e1;
+  --primary-color: #119e9c;
+  --primary-hover: #0e8a87;
+}
+
+body.light-mode {
+  background-color: var(--background-darker);
+  color: var(--text-color);
+}
+
+body.light-mode header {
+  background-color: var(--background-dark);
+  border-bottom: 1px solid var(--border-color);
+}
+
+body.light-mode .card,
+body.light-mode .result-card,
+body.light-mode .stat-card {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+body.light-mode .btn {
+  background-color: var(--primary-color);
+  color: var(--background-dark);
+}
+
+body.light-mode .btn:hover {
+  background-color: #16b8a8;
+}
+
+body.light-mode .code-editor {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border-color: var(--border-color);
+}
+
+body.light-mode .file-input-label {
+  background-color: var(--primary-color);
+  color: var(--background-dark);
+}
+
+body.light-mode .language-select {
+  background-color: var(--background-dark);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+body.light-mode .history-table th,
+body.light-mode .history-table td {
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+body.light-mode .spinner {
+  border: 3px solid rgba(30, 41, 59, 0.1);
+  border-top-color: var(--primary-color);
+}
+
+body.light-mode .user-dropdown {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+}
+
+body.light-mode .user-dropdown-item {
+  color: var(--text-color);
+}
+
+body.light-mode .user-dropdown-item:hover {
+  background-color: rgba(31, 230, 211, 0.08);
+}
+
+body.light-mode .user-avatar {
+  background-color: var(--primary-color);
+  color: var(--background-dark);
+}
+
+body.light-mode .empty-history {
+  color: var(--text-muted);
+}
+
+body.light-mode .dashboard-cards {
+  background: none;
+}
+
+body.light-mode .toggle-slider {
+  background-color: #cbd5e1;
+}
+
+body.light-mode input:checked + .toggle-slider {
+  background-color: var(--primary-color);
+}
+
+body.light-mode .toggle-slider:before {
+  background-color: #fff;
 }

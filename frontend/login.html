@@ -62,10 +62,26 @@
             const loginError = document.getElementById('login-error');
             const themeToggle = document.getElementById('theme-toggle-input');
 
-            // Theme toggle
-            themeToggle.addEventListener('change', function() {
-                document.body.classList.toggle('light-mode');
-            });
+            // Theme persistence and toggle sync
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                if (themeToggle) themeToggle.checked = true;
+            } else {
+                document.body.classList.remove('light-mode');
+                if (themeToggle) themeToggle.checked = false;
+            }
+            if (themeToggle) {
+                themeToggle.addEventListener('change', function() {
+                    if (themeToggle.checked) {
+                        document.body.classList.add('light-mode');
+                        localStorage.setItem('theme', 'light');
+                    } else {
+                        document.body.classList.remove('light-mode');
+                        localStorage.setItem('theme', 'dark');
+                    }
+                });
+            }
 
             // Check if user is already logged in
             fetch('/api/auth/me', {

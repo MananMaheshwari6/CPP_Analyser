@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+require('dotenv').config();
 module.exports = async function aiAnalyzeCode(code) {
   const prompt = `You are an expert C++ code analyzer. Analyze the following code and respond strictly in this format: O(time complexity),O(space complexity). Do not include explanations.
 

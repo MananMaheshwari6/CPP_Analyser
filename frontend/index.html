@@ -25,25 +25,7 @@
                 <span class="toggle-slider"></span>
             </label>
             <span class="toggle-icon">☀️</span>
-
-            <!-- User info (shown when logged in) -->
-            <div class="user-info hidden" id="user-info">
-                <div class="user-avatar">G</div>
-                <span class="username-display">Guest</span>
-
-                <!-- Dropdown menu -->
-                <div class="user-dropdown hidden" id="user-dropdown">
-                    <a href="index.html" class="user-dropdown-item">Analyzer</a>
-                    <div class="user-dropdown-divider"></div>
-                    <a href="#" class="user-dropdown-item logout-item" id="logout-btn">Logout</a>
-                </div>
-            </div>
-
-            <!-- Auth buttons (shown when not logged in) -->
-            <div class="auth-header-buttons" id="auth-header-buttons">
-                <a href="login.html" class="btn header-auth-btn">Login</a>
-                <a href="register.html" class="btn header-auth-btn" style="background-color: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);">Register</a>
-            </div>
+            <button id="logout-btn" class="btn header-auth-btn" style="margin-left: 1rem;">Logout</button>
         </div>
     </header>
 
@@ -157,5 +139,46 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
+    <script>
+      // Theme persistence and toggle sync
+      document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('theme-toggle-input');
+        // Apply saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+          document.body.classList.add('light-mode');
+          if (themeToggle) themeToggle.checked = true;
+        } else {
+          document.body.classList.remove('light-mode');
+          if (themeToggle) themeToggle.checked = false;
+        }
+        // Listen for toggle changes
+        if (themeToggle) {
+          themeToggle.addEventListener('change', function() {
+            if (themeToggle.checked) {
+              document.body.classList.add('light-mode');
+              localStorage.setItem('theme', 'light');
+            } else {
+              document.body.classList.remove('light-mode');
+              localStorage.setItem('theme', 'dark');
+            }
+          });
+        }
+
+        // Redirect unauthenticated users to register page
+        fetch('/api/auth/me', {
+          method: 'GET',
+          credentials: 'include'
+        })
+        .then(response => {
+          if (!response.ok) {
+            window.location.href = 'register.html';
+          }
+        })
+        .catch(() => {
+          window.location.href = 'register.html';
+        });
+      });
+    </script>
 </body>
 </html>
