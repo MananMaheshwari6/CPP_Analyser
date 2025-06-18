@@ -1,113 +1,125 @@
+import re
 import sys
-import subprocess
-import tempfile
-import os
-import traceback
+
+class Complexity:
+    #heuristic rules
+    CONSTANT = "O(1)"
+    LINEAR = "O(n)"
+    QUADRATIC = "O(n^2)"
+    CUBIC = "O(n^3)"
+    LINEARITHMIC = "O(n log n)"
+    EXPONENTIAL = "O(2^n)"
+    UNKNOWN = "Unknown"
+
+class CodeLineAnalysis:
+    def __init__(self, line_number, code, complexity, reason):
+        self.line_number = line_number
+        self.code = code
+        self.complexity = complexity
+        self.reason = reason
+
+class ComplexityAnalyzer:
+    def __init__(self, code_lines):
+        self.code_lines = code_lines
+        self.results = []
+        self.function_defs = {}
+        self.current_function = ""
+        self.nesting_level = 0
+        self.max_nesting = 0
+        self.block_stack = []
+
+    def trim(self, line):
+        return line.strip()
+
+    def is_comment(self, line):
+        return not line or line.strip().startswith("//")
+
+    def is_recursive(self, line):
+        if not self.current_function:
+            return False
+        return re.search(rf"\b{re.escape(self.current_function)}\s*\(", line)
+
+    def track_function_definitions(self):
+        for line in self.code_lines:
+            match = re.search(r"\b(?:int|void|float|double|bool|auto)\s+(\w+)\s*\([^)]*\)\s*(const)?\s*[{;]", line)
+            if match:
+                func_name = match.group(1)
+                self.function_defs[func_name] = True
+
+    def analyze_line(self, line):
+        if self.is_comment(line):
+            return Complexity.CONSTANT, "Comment or blank line"
+
+        if re.search(r"\b(for|while)\s*\(", line):
+            if self.nesting_level == 0:
+                return Complexity.LINEAR, "Single loop"
+            elif self.nesting_level == 1:
+                return Complexity.QUADRATIC, "Nested loop"
+            elif self.nesting_level == 2:
+                return Complexity.CUBIC, "Triple nested loop"
+            else:
+                return Complexity.EXPONENTIAL, "Deep nested loops"
+
+        if self.is_recursive(line):
+            return Complexity.EXPONENTIAL, "Recursive call"
+
+        if re.search(r"\b[a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\)\s*;", line):
+            return Complexity.UNKNOWN, "Function call"
+
+        return Complexity.CONSTANT, "Basic operation"
+
+    def analyze(self):
+        self.track_function_definitions()
+
+        for i, raw_line in enumerate(self.code_lines):
+            line = self.trim(raw_line)
+
+            func_match = re.search(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*(const)?\s*[{]", line)
+            if func_match:
+                self.current_function = func_match.group(1)
+
+            if "for" in line or "while" in line:
+                self.block_stack.append("loop")
+                self.nesting_level += 1
+                self.max_nesting = max(self.max_nesting, self.nesting_level)
+            elif "{" in line:
+                self.block_stack.append("block")
+
+            comp, reason = self.analyze_line(line)
+            self.results.append(CodeLineAnalysis(i + 1, line, comp, reason))
+
+            if "}" in line and self.block_stack:
+                if self.block_stack[-1] == "loop":
+                    self.nesting_level -= 1
+                self.block_stack.pop()
+
+        return self.results
+
+    def estimate_overall_complexity(self):
+        if self.max_nesting == 0:
+            return Complexity.CONSTANT
+        elif self.max_nesting == 1:
+            return Complexity.LINEAR
+        elif self.max_nesting == 2:
+            return Complexity.QUADRATIC
+        elif self.max_nesting == 3:
+            return Complexity.CUBIC
+        else:
+            return Complexity.EXPONENTIAL
 
 def analyze_cpp_code(code):
-    """
-    Analyze C++ code by creating a temp file and using Clang to dump the AST.
-    Returns a placeholder time complexity string or error message.
-    """
-    temp_path = None
-
-    try:
-        print(f"\n=== Starting analysis ===")
-        print(f"Code length: {len(code)} characters")
-        print(f"First 100 chars: {code[:100]}")
-        
-        # Create a temporary file with the code
-        with tempfile.NamedTemporaryFile(mode='w+', suffix='.cpp', delete=False) as temp:
-            temp.write(code)
-            temp.flush()
-            temp_path = temp.name
-            print(f"\n=== Created temp file ===")
-            print(f"Temp file path: {temp_path}")
-            print(f"File content preview:\n{code[:100]}...")
-
-        # Verify file exists and has content
-        if not os.path.exists(temp_path):
-            print(f"=== ERROR ===")
-            print(f"Temp file {temp_path} does not exist!")
-            return "ERROR: Failed to create temp file"
-
-        with open(temp_path, 'r') as f:
-            content = f.read()
-            if not content:
-                print("=== ERROR ===")
-                print("Temp file is empty!")
-                return "ERROR: Empty temp file"
-
-        # Run Clang AST dump
-        try:
-            print("\n=== Starting Clang analysis ===")
-            print(f"Running: clang -Xclang -ast-dump {temp_path}")
-            result = subprocess.run(
-                ['clang', '-Xclang', '-ast-dump', temp_path],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            
-            print("\n=== Clang output ===")
-            print(f"Return code: {result.returncode}")
-            print("\n=== Clang stdout ===")
-            print(result.stdout[:500])  # Print only first 500 chars to avoid flooding
-            if result.stderr:
-                print("\n=== Clang stderr ===")
-                print(result.stderr)
-
-            # Placeholder for actual complexity analysis logic
-            print("\n=== Analysis complete ===")
-            print("Returning placeholder complexity")
-            return "O(n),O(1)"
-            
-        except subprocess.TimeoutExpired:
-            print("=== ERROR ===")
-            print("Clang command timed out")
-            return "ERROR: Analysis timed out"
-        except subprocess.CalledProcessError as e:
-            print("=== ERROR ===")
-            print(f"Clang returned error code {e.returncode}")
-            print(f"Output: {e.output}")
-            return f"ERROR: Clang error: {str(e)}"
-        except Exception as e:
-            print("=== ERROR ===")
-            print("Error running Clang:")
-            print(traceback.format_exc())
-            return f"ERROR: Failed to analyze code: {str(e)}"
-            
-    except Exception as e:
-        print("=== ERROR ===")
-        print("Unhandled error in analyze_cpp_code:")
-        print(traceback.format_exc())
-        return f"ERROR: Internal error: {str(e)}"
-
-    finally:
-        # Always clean up temp file
-        if temp_path and os.path.exists(temp_path):
-            try:
-                os.unlink(temp_path)
-                print(f"\n=== Cleanup ===")
-                print(f"Deleted temp file: {temp_path}")
-            except Exception as e:
-                print("=== ERROR ===")
-                print(f"Error deleting temp file: {str(e)}")
+    lines = code.splitlines()
+    analyzer = ComplexityAnalyzer(lines)
+    analyzer.analyze()
+    return analyzer.estimate_overall_complexity(), "O(1)"  # Simplified space for now
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("=== ERROR ===")
-        print("Usage: python analyzeComplexity.py <cpp_file>")
+    try:
+        filename = sys.argv[1]
+        with open(filename, "r") as f:
+            code = f.read()
+        time_cx, space_cx = analyze_cpp_code(code)
+        print(f"{time_cx},{space_cx}")
+    except Exception as e:
+        print("ERROR:", e)
         sys.exit(1)
-    
-    cpp_file = sys.argv[1]
-    if not os.path.exists(cpp_file):
-        print("=== ERROR ===")
-        print(f"File not found: {cpp_file}")
-        sys.exit(1)
-    
-    with open(cpp_file, 'r') as f:
-        code = f.read()
-    
-    result = analyze_cpp_code(code)
-    print(result)

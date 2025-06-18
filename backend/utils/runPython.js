@@ -17,7 +17,7 @@ module.exports = async function runPython(code) {
         await fs.writeFile(tempFile, code);
         console.log("✅ Temp C++ file created at:", tempFile);
 
-        // Run the Python script with a timeout
+        // Run the Python script with file argument
         const python = spawn('C:\\Python312\\python.exe', [scriptPath, tempFile], {
             stdio: ['pipe', 'pipe', 'pipe'],
             cwd: path.dirname(scriptPath)  // Set working directory to script location
@@ -27,8 +27,7 @@ module.exports = async function runPython(code) {
         let errorOutput = '';
         let timeoutId;
 
-        // Set up timeout
-        const timeout = 10000; // 10 seconds
+        const timeout = 30000;
         timeoutId = setTimeout(() => {
             if (python) {
                 console.error("❌ Python script timed out after", timeout, "ms");
@@ -36,7 +35,6 @@ module.exports = async function runPython(code) {
             }
         }, timeout);
 
-        // Handle process output
         python.stdout.on("data", (data) => {
             const dataStr = data.toString();
             output += dataStr;
@@ -49,7 +47,6 @@ module.exports = async function runPython(code) {
             console.error("🐍 Python stderr:", dataStr);
         });
 
-        // Handle process completion
         await new Promise((resolve, reject) => {
             python.on('error', (err) => {
                 console.error("❌ Python process error:", err);
@@ -60,7 +57,7 @@ module.exports = async function runPython(code) {
                 if (timeoutId) {
                     clearTimeout(timeoutId);
                 }
-                
+
                 console.log("🐍 Python process exited with code:", code);
                 if (code !== 0 || errorOutput) {
                     console.error("❌ Python script error:", errorOutput);
@@ -79,7 +76,6 @@ module.exports = async function runPython(code) {
         throw new Error(`Failed to run Python script: ${error.message}`);
 
     } finally {
-        // Cleanup
         try {
             await fs.unlink(tempFile);
             console.log("🗑️ Temp file deleted:", tempFile);
